@@ -1,27 +1,49 @@
-# FastAPI backend
+# # FastAPI backend
+# fastapi==0.110.0
+# uvicorn[standard]==0.29.0
+# python-multipart==0.0.9
+
+# # LangChain (MODERN + COMPATIBLE)
+# langchain-core==0.2.40
+# langchain-community==0.2.16
+# langchain-cohere==0.1.9
+# langsmith==0.1.130
+
+# # PDF processing
+# pypdf==4.2.0
+
+# # Embeddings
+# cohere==5.11.0
+
+# # LLM
+# cerebras-cloud-sdk==1.0.0
+
+# # Vector DB (native client only)
+# pinecone-client==3.1.0
+
+# # Utilities
+# python-dotenv==1.0.1
+# requests==2.31.0
+
+
 fastapi==0.110.0
 uvicorn[standard]==0.29.0
 python-multipart==0.0.9
 
-# LangChain core + community loaders (Updated for compatibility)
 langchain==0.2.16
 langchain-community==0.2.16
 langchain-core==0.2.40
 
-# PDF processing
 pypdf==4.2.0
 
-# Embeddings (Cohere - Free tier, no downloads)
 cohere==5.11.0
-langchain-cohere==0.1.9
+langchain-cohere==0.3.9
 
-# LLM (Cerebras - Fast inference)
 cerebras-cloud-sdk==1.0.0
 
-# Vector DB (Compatible with langchain-community)
 pinecone-client==3.1.0
 langchain-pinecone==0.1.0
 
-# Utilities
 python-dotenv==1.0.1
 requests==2.31.0
+
