@@ -10,9 +10,8 @@ langchain-community==0.0.38
 # PDF processing
 pypdf==4.2.0
 
-# Embeddings (HuggingFace - local)
-sentence-transformers==2.6.1
-torch>=2.0.0
+# Embeddings (Google Gemini)
+langchain-google-genai==1.0.1
 
 # Vector DB
 pinecone-client==3.0.2

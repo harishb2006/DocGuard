@@ -1,7 +1,7 @@
 import pinecone
 from langchain_community.vectorstores import Pinecone
-from langchain.embeddings import HuggingFaceEmbeddings
-from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX_NAME
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX_NAME, GOOGLE_API_KEY
 
 def get_vectorstore():
     pinecone.init(
@@ -12,12 +12,13 @@ def get_vectorstore():
     if PINECONE_INDEX_NAME not in pinecone.list_indexes():
         pinecone.create_index(
             name=PINECONE_INDEX_NAME,
-            dimension=384,  # sentence-transformers
+            dimension=768,  # Gemini embedding dimension
             metric="cosine"
         )
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",
+        google_api_key=GOOGLE_API_KEY
     )
 
     index = pinecone.Index(PINECONE_INDEX_NAME)
