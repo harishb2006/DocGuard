@@ -3,18 +3,24 @@ fastapi==0.110.0
 uvicorn[standard]==0.29.0
 python-multipart==0.0.9
 
-# LangChain core + community loaders
-langchain==0.1.20
-langchain-community==0.0.38
+# LangChain core + community loaders (Updated for compatibility)
+langchain==0.2.16
+langchain-community==0.2.16
+langchain-core==0.2.40
 
 # PDF processing
 pypdf==4.2.0
 
-# Embeddings (Google Gemini)
-langchain-google-genai==1.0.1
+# Embeddings (Cohere - Free tier, no downloads)
+cohere==5.11.0
+langchain-cohere==0.1.9
 
-# Vector DB
-pinecone-client==3.0.2
+# LLM (Cerebras - Fast inference)
+cerebras-cloud-sdk==1.0.0
+
+# Vector DB (Compatible with langchain-community)
+pinecone-client==3.1.0
+langchain-pinecone==0.1.0
 
 # Utilities
 python-dotenv==1.0.1

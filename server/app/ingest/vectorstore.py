@@ -1,32 +1,44 @@
-import pinecone
-from langchain_community.vectorstores import Pinecone
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX_NAME, GOOGLE_API_KEY
+from pinecone import Pinecone, ServerlessSpec
+from langchain_pinecone import PineconeVectorStore
+from langchain_cohere import CohereEmbeddings
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from config import PINECONE_API_KEY, PINECONE_ENV, PINECONE_INDEX_NAME, COHERE_API_KEY
 
 def get_vectorstore():
-    pinecone.init(
-        api_key=PINECONE_API_KEY,
-        environment=PINECONE_ENV
-    )
-
-    if PINECONE_INDEX_NAME not in pinecone.list_indexes():
-        pinecone.create_index(
+    # Initialize Pinecone with new API
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    
+    # Check if index exists
+    index_names = [index.name for index in pc.list_indexes()]
+    
+    if PINECONE_INDEX_NAME not in index_names:
+        # Create index with serverless spec
+        pc.create_index(
             name=PINECONE_INDEX_NAME,
-            dimension=768,  # Gemini embedding dimension
-            metric="cosine"
+            dimension=1024,  # Cohere embed-english-v3.0 dimension
+            metric="cosine",
+            spec=ServerlessSpec(
+                cloud="aws",
+                region=PINECONE_ENV or "us-east-1"
+            )
         )
-
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-        google_api_key=GOOGLE_API_KEY
+    
+    # Initialize Cohere embeddings (API-based, free tier, no downloads)
+    embeddings = CohereEmbeddings(
+        cohere_api_key=COHERE_API_KEY,
+        model="embed-english-v3.0"
     )
-
-    index = pinecone.Index(PINECONE_INDEX_NAME)
-
-    vectorstore = Pinecone(
+    
+    # Get index
+    index = pc.Index(PINECONE_INDEX_NAME)
+    
+    # Create vectorstore using langchain-pinecone
+    vectorstore = PineconeVectorStore(
         index=index,
         embedding=embeddings,
         text_key="text"
     )
-
+    
     return vectorstore
