@@ -84,7 +84,8 @@ QUESTION: {request.question}
 ANSWER:"""
 
         # Step 4: Call Cerebras LLM
-        client = Cerebras(api_key=CEREBRAS_API_KEY)
+        # Cerebras SDK reads CEREBRAS_API_KEY from environment automatically
+        client = Cerebras()
 
         chat_completion = client.chat.completions.create(
             messages=[

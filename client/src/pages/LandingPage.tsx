@@ -37,10 +37,24 @@ const LandingPage = () => {
               <ShieldCheck size={20} className="text-indigo-600" />
               <span>RuleBook Enterprise</span>
             </div>
-            <button className="bg-black text-white px-6 py-2.5 rounded-full font-semibold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg">
-              <Sparkles size={16} />
-              Admin Console
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate('/documents')}
+                className="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold hover:bg-slate-50 transition-all shadow-md border border-slate-200"
+              >
+                Documents
+              </button>
+              <button 
+                onClick={() => navigate('/chat')}
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-full font-semibold hover:bg-indigo-700 transition-all shadow-md"
+              >
+                Ask Questions
+              </button>
+              <button className="bg-black text-white px-6 py-2.5 rounded-full font-semibold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg">
+                <Sparkles size={16} />
+                Admin Console
+              </button>
+            </div>
           </nav>
 
           <div className="flex-1">
@@ -54,22 +68,24 @@ const LandingPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
                 <FeatureCard 
                   icon={<div className="bg-indigo-100 p-3 rounded-xl text-indigo-600"><Upload /></div>}
-                  title="Ingest Manuals"
+                  title="Upload Documents"
                   desc="Upload corporate PDFs. We chunk and embed data for 100% accuracy."
                   label="Data Pipeline"
                   onClick={() => navigate('/upload')}
                 />
                 <FeatureCard 
                   icon={<div className="bg-blue-100 p-3 rounded-xl text-blue-600"><FileSearch /></div>}
-                  title="Verified Answers"
+                  title="Ask Questions"
                   desc="AI answers strictly using your uploaded data—no hallucinations."
                   label="Grounded AI"
+                  onClick={() => navigate('/chat')}
                 />
                 <FeatureCard 
                   icon={<div className="bg-slate-100 p-3 rounded-xl text-slate-600"><ShieldCheck /></div>}
-                  title="Source Citation"
-                  desc="Every response includes page numbers and direct quotes for audit."
-                  label="Compliance"
+                  title="Manage Documents"
+                  desc="View all uploaded documents with page numbers and direct quotes for audit."
+                  label="Document Control"
+                  onClick={() => navigate('/documents')}
                 />
               </div>
             </div>

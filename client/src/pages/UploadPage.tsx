@@ -82,13 +82,30 @@ const UploadPage = () => {
           )}
 
           {status === 'success' && (
-            <div className="mt-8 p-6 bg-green-50 border border-green-100 rounded-3xl flex items-center gap-4 text-left">
-                <CheckCircle className="text-green-500 shrink-0" size={28} />
-                <div>
-                    <h4 className="font-bold text-green-900">Ingestion Complete!</h4>
-                    <p className="text-green-700 text-sm">Document fragmented into semantic chunks and synced with Vector DB.</p>
-                </div>
-            </div>
+            <>
+              <div className="mt-8 p-6 bg-green-50 border border-green-100 rounded-3xl flex items-center gap-4 text-left">
+                  <CheckCircle className="text-green-500 shrink-0" size={28} />
+                  <div>
+                      <h4 className="font-bold text-green-900">Ingestion Complete!</h4>
+                      <p className="text-green-700 text-sm">Document fragmented into semantic chunks and synced with Vector DB.</p>
+                  </div>
+              </div>
+              
+              <div className="mt-6 flex gap-4">
+                <button 
+                  onClick={() => navigate('/chat')}
+                  className="flex-1 bg-indigo-600 text-white py-4 rounded-3xl font-bold hover:bg-indigo-700 transition-all shadow-lg"
+                >
+                  Ask Questions Now
+                </button>
+                <button 
+                  onClick={() => {setFile(null); setStatus('idle');}}
+                  className="flex-1 bg-white text-slate-700 py-4 rounded-3xl font-bold hover:bg-slate-50 transition-all shadow-lg border-2 border-slate-200"
+                >
+                  Upload Another
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
