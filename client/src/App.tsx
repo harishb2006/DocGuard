@@ -5,6 +5,8 @@ import UploadPage from './pages/UploadPage';
 import ChatPage from './pages/ChatPage';
 import DocumentsPage from './pages/DocumentsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -13,10 +15,43 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/upload" element={<UploadPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Employee Routes (Protected) */}
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes (Protected + Admin Role) */}
+          <Route
+            path="/upload"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <UploadPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <DocumentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <AnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </AuthProvider>
     </Router>

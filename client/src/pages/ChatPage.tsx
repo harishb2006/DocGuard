@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, ArrowLeft, ShieldCheck, Loader2, BookOpen, FileText, Filter, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface Source {
   page: number;
@@ -20,6 +21,7 @@ interface DocInfo {
 
 const ChatPage = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,11 +30,18 @@ const ChatPage = () => {
   const [showFilter, setShowFilter] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:8000/admin/documents')
-      .then(res => res.json())
-      .then(data => setAvailableDocs(data))
-      .catch(console.error);
-  }, []);
+    if (token) {
+      fetch('http://localhost:8000/admin/documents', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => {
+          if (res.ok) return res.json();
+          throw new Error("Failed to load docs");
+        })
+        .then(data => setAvailableDocs(data))
+        .catch(console.error);
+    }
+  }, [token]);
 
   const toggleDocFilter = (filename: string) => {
     setSelectedDocs(prev =>
@@ -43,7 +52,7 @@ const ChatPage = () => {
   };
 
   const handleAsk = async () => {
-    if (!question.trim() || loading) return;
+    if (!question.trim() || loading || !token) return;
 
     const userMessage: Message = { type: 'user', content: question };
     setMessages(prev => [...prev, userMessage]);
@@ -53,7 +62,10 @@ const ChatPage = () => {
     try {
       const response = await fetch('http://localhost:8000/employee/ask', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           question,
           document_filter: selectedDocs.length > 0 ? selectedDocs : undefined
@@ -72,7 +84,7 @@ const ChatPage = () => {
     } catch {
       const errorMessage: Message = {
         type: 'assistant',
-        content: '❌ Error connecting to backend. Make sure the server is running on http://localhost:8000'
+        content: '❌ Error connecting to backend or Authentication failed.'
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
