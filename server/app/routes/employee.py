@@ -18,8 +18,10 @@ from ..db.mongodb import get_queries_collection, get_users_collection
 router = APIRouter()
 
 
+
 class QuestionRequest(BaseModel):
     question: str
+    document_filter: list[str] = None
 
 
 class SourceCitation(BaseModel):
@@ -52,9 +54,16 @@ async def ask_question(
         
         # Step 1: Retrieve relevant chunks
         vectorstore = get_vectorstore()
+        
+        # Build filter if provided
+        search_kwargs = {"k": 3}
+        if request.document_filter:
+            search_kwargs["filter"] = {"document_name": {"$in": request.document_filter}}
+            
         results = vectorstore.similarity_search_with_score(
             request.question,
-            k=3  # Top 3 most relevant chunks
+            k=3,  # Top 3 most relevant chunks
+            filter=search_kwargs.get("filter")
         )
 
         if not results:

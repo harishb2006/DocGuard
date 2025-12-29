@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, ShieldCheck, Loader2, BookOpen, FileText, Sparkles } from 'lucide-react';
+import { Send, ArrowLeft, ShieldCheck, Loader2, BookOpen, FileText, Filter, X } from 'lucide-react';
 
 interface Source {
   page: number;
@@ -14,11 +14,33 @@ interface Message {
   sources?: Source[];
 }
 
+interface DocInfo {
+  filename: string;
+}
+
 const ChatPage = () => {
   const navigate = useNavigate();
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [availableDocs, setAvailableDocs] = useState<DocInfo[]>([]);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/admin/documents')
+      .then(res => res.json())
+      .then(data => setAvailableDocs(data))
+      .catch(console.error);
+  }, []);
+
+  const toggleDocFilter = (filename: string) => {
+    setSelectedDocs(prev =>
+      prev.includes(filename)
+        ? prev.filter(d => d !== filename)
+        : [...prev, filename]
+    );
+  };
 
   const handleAsk = async () => {
     if (!question.trim() || loading) return;
@@ -32,7 +54,10 @@ const ChatPage = () => {
       const response = await fetch('http://localhost:8000/employee/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({
+          question,
+          document_filter: selectedDocs.length > 0 ? selectedDocs : undefined
+        })
       });
 
       if (!response.ok) throw new Error('Failed to get answer');
@@ -58,7 +83,7 @@ const ChatPage = () => {
   return (
     <div className="min-h-screen bg-[#DDE2FF] flex items-center justify-center p-6">
       <div className="w-full max-w-5xl bg-white/80 backdrop-blur-xl rounded-5xl shadow-2xl border border-white overflow-hidden flex flex-col" style={{ height: '85vh' }}>
-        
+
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white/50">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-semibold transition-colors">
@@ -68,9 +93,39 @@ const ChatPage = () => {
             <ShieldCheck size={24} />
             <span>Employee Q&A</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-600 text-sm">
-            <Sparkles size={16} className="text-indigo-500" />
-            <span>RAG Powered</span>
+
+          {/* Filter Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilter(!showFilter)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all ${selectedDocs.length > 0 ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-indigo-300'}`}
+            >
+              <Filter size={16} />
+              {selectedDocs.length > 0 ? `${selectedDocs.length} Docs Selected` : 'Filter Sources'}
+            </button>
+
+            {showFilter && (
+              <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-bold text-slate-700">Select Sources</span>
+                  <button onClick={() => setShowFilter(false)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+                </div>
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {availableDocs.map(doc => (
+                    <label key={doc.filename} className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedDocs.includes(doc.filename)}
+                        onChange={() => toggleDocFilter(doc.filename)}
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-slate-600 truncate">{doc.filename}</span>
+                    </label>
+                  ))}
+                  {availableDocs.length === 0 && <p className="text-xs text-slate-400 text-center py-2">No documents found.</p>}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -98,7 +153,7 @@ const ChatPage = () => {
                   <p className={`${msg.type === 'user' ? 'text-white' : 'text-slate-800'} leading-relaxed`}>
                     {msg.content}
                   </p>
-                  
+
                   {/* Source Citations */}
                   {msg.sources && msg.sources.length > 0 && (
                     <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
@@ -125,7 +180,7 @@ const ChatPage = () => {
               </div>
             ))
           )}
-          
+
           {loading && (
             <div className="flex justify-start">
               <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-lg flex items-center gap-3">
@@ -144,7 +199,7 @@ const ChatPage = () => {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAsk()}
-              placeholder="Ask about company policies..."
+              placeholder={selectedDocs.length > 0 ? `Asking in ${selectedDocs.length} documents...` : "Ask about company policies..."}
               className="flex-1 bg-transparent outline-none py-4 text-slate-700 font-medium"
               disabled={loading}
             />
