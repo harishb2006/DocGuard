@@ -1,8 +1,10 @@
 
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BarChart, Activity, HelpCircle, Cloud, Loader2 } from 'lucide-react';
+import { ArrowLeft, BarChart, Activity, HelpCircle, Cloud, Loader2, Lock } from 'lucide-react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useAuth } from '../context/AuthContext';
 
 interface QueryData {
     question: string;
@@ -18,21 +20,36 @@ interface KeywordData {
 
 const AnalyticsPage = () => {
     const navigate = useNavigate();
+    const { token, isAdmin, loading: authLoading, loginWithGoogle } = useAuth();
     const [recentQueries, setRecentQueries] = useState<QueryData[]>([]);
     const [wordCloudData, setWordCloudData] = useState<KeywordData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (authLoading) return;
+
+        if (!token || !isAdmin) {
+            setLoading(false);
+            return;
+        }
+
         const fetchData = async () => {
             try {
+                const headers = {
+                    'Authorization': `Bearer ${token}`
+                };
+
                 const [queriesRes, cloudRes] = await Promise.all([
-                    fetch('http://localhost:8000/admin/analytics/queries'),
-                    fetch('http://localhost:8000/admin/analytics/word-cloud')
+                    fetch('http://localhost:8000/admin/analytics/queries', { headers }),
+                    fetch('http://localhost:8000/admin/analytics/word-cloud', { headers })
                 ]);
 
                 if (queriesRes.ok) {
                     const data = await queriesRes.json();
                     setRecentQueries(data.recent_queries || []);
+                } else {
+                    setError("Failed to fetch queries");
                 }
 
                 if (cloudRes.ok) {
@@ -41,13 +58,50 @@ const AnalyticsPage = () => {
                 }
             } catch (error) {
                 console.error("Failed to fetch analytics:", error);
+                setError("Failed to connect to server");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, []);
+    }, [token, isAdmin, authLoading]);
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#DDE2FF] flex items-center justify-center">
+                <Loader2 className="animate-spin text-indigo-600" size={40} />
+            </div>
+        );
+    }
+
+    if (!token || !isAdmin) {
+        return (
+            <div className="min-h-screen bg-[#DDE2FF] flex items-center justify-center p-4">
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl max-w-md w-full text-center">
+                    <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-600">
+                        <Lock size={32} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Access Denied</h2>
+                    <p className="text-slate-600 mb-6">
+                        You need administrator privileges to view this dashboard.
+                    </p>
+                    <button
+                        onClick={loginWithGoogle}
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all w-full mb-4"
+                    >
+                        Sign In with Google
+                    </button>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="text-slate-500 font-medium hover:text-slate-700"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#DDE2FF] p-8">
@@ -73,6 +127,10 @@ const AnalyticsPage = () => {
                 {loading ? (
                     <div className="flex items-center justify-center h-64">
                         <Loader2 className="animate-spin text-indigo-600" size={40} />
+                    </div>
+                ) : error ? (
+                    <div className="bg-rose-100 text-rose-800 p-4 rounded-xl text-center font-medium">
+                        {error}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
