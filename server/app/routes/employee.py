@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from cerebras.cloud.sdk import Cerebras
 import sys
 import os
+from datetime import datetime
 
 sys.path.insert(
     0,
@@ -11,6 +12,8 @@ sys.path.insert(
 
 from config import CEREBRAS_API_KEY
 from ..ingest.vectorstore import get_vectorstore
+from ..auth.firebase_auth import verify_firebase_token
+from ..db.mongodb import get_queries_collection, get_users_collection
 
 router = APIRouter()
 
@@ -31,14 +34,22 @@ class AnswerResponse(BaseModel):
 
 
 @router.post("/ask", response_model=AnswerResponse)
-async def ask_question(request: QuestionRequest):
+async def ask_question(
+    request: QuestionRequest,
+    token_data: dict = Depends(verify_firebase_token)
+):
     """
     RAG-based Q&A endpoint:
     1. Retrieves relevant chunks from Pinecone
     2. Sends to LLM with grounding prompt
     3. Returns answer with source citations
+    Requires: User authentication
     """
     try:
+        # Get user info for logging
+        users_collection = await get_users_collection()
+        user = await users_collection.find_one({"uid": token_data["uid"]})
+        
         # Step 1: Retrieve relevant chunks
         vectorstore = get_vectorstore()
         results = vectorstore.similarity_search_with_score(
@@ -47,6 +58,16 @@ async def ask_question(request: QuestionRequest):
         )
 
         if not results:
+            # Log query with no answer
+            queries_collection = await get_queries_collection()
+            await queries_collection.insert_one({
+                "question": request.question,
+                "user_uid": token_data["uid"],
+                "user_email": user.get("email") if user else "unknown",
+                "has_answer": False,
+                "timestamp": datetime.utcnow()
+            })
+            
             return AnswerResponse(
                 answer="I don't have any information to answer that question. Please ensure relevant documents have been uploaded.",
                 sources=[]
@@ -99,6 +120,18 @@ ANSWER:"""
         )
 
         answer = chat_completion.choices[0].message.content
+        
+        # Log successful query
+        queries_collection = await get_queries_collection()
+        await queries_collection.insert_one({
+            "question": request.question,
+            "answer": answer,
+            "user_uid": token_data["uid"],
+            "user_email": user.get("email") if user else "unknown",
+            "has_answer": True,
+            "sources_count": len(sources),
+            "timestamp": datetime.utcnow()
+        })
 
         return AnswerResponse(
             answer=answer,

@@ -25,6 +25,6 @@ tmp/
 # Qdrant local (optional, if using local storage)
 qdrant_storage/
 
-# Node (if frontend in same repo)
-node_modules/
 dist/
+# Firebase credentials (security)
+server/app/docg-9a14e-firebase-adminsdk-fbsvc-891e32e2b7.json

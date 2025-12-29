@@ -4,8 +4,6 @@ import shutil
 import os
 from typing import List
 from datetime import datetime
-from collections import Counter
-import re
 
 from ..ingest.loader import load_pdf
 from ..ingest.splitter import split_documents
@@ -17,7 +15,6 @@ router = APIRouter()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
 
 async def verify_admin_access(token_data: dict = Depends(verify_firebase_token)):
     """Dependency to verify admin access"""
@@ -88,9 +85,10 @@ async def upload_pdf(
         }
     
     except Exception as e:
-        import traceback
-        print(f"ERROR in upload: {str(e)}")
-        print(traceback.format_exc())
+        import tracebackadmin_user: dict = Depends(verify_admin_access)):
+    """
+    List all uploaded documents in the uploads directory
+    Requires: Admin authentication
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
 
 
@@ -101,10 +99,9 @@ class DocumentInfo(BaseModel):
 
 
 @router.get("/documents", response_model=List[DocumentInfo])
-async def list_documents(admin_user: dict = Depends(verify_admin_access)):
+async def list_documents():
     """
     List all uploaded documents in the uploads directory
-    Requires: Admin authentication
     """
     try:
         documents = []
@@ -123,11 +120,11 @@ async def list_documents(admin_user: dict = Depends(verify_admin_access)):
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
 
 
-@router.delete("/documents/{filename}")
-async def delete_document(filename: str, admin_user: dict = Depends(verify_admin_access)):
+@router.delete("/documents/{filename}"), admin_user: dict = Depends(verify_admin_access)):
     """
     Delete a document from uploads directory and its vectors from Pinecone
     Requires: Admin authentication
+    Delete a document from uploads directory and its vectors from Pinecone
     Note: Pinecone deletion by metadata filter requires upsert IDs tracking
     For now, we just delete the file. Full vector cleanup would need enhanced metadata.
     """
@@ -262,6 +259,10 @@ async def get_word_cloud_data(admin_user: dict = Depends(verify_admin_access)):
             {"question": 1}
         ).to_list(length=1000)
         
+        # Simple word frequency analysis
+        from collections import Counter
+        import re
+        
         # Combine all questions
         all_text = " ".join([q.get("question", "") for q in all_queries])
         
@@ -296,3 +297,4 @@ async def get_word_cloud_data(admin_user: dict = Depends(verify_admin_access)):
             status_code=500,
             detail=f"Error generating word cloud: {str(e)}"
         )
+

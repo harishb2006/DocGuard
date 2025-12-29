@@ -1,6 +1,7 @@
 import os
 import sys
-from pinecone import Pinecone, ServerlessSpec
+
+import pinecone
 from langchain_pinecone import PineconeVectorStore
 from langchain_cohere import CohereEmbeddings
 
@@ -22,37 +23,31 @@ from config import (
 )
 
 
+
 def get_vectorstore():
     """
     Creates or connects to a Pinecone vector store using Cohere embeddings.
-    Compatible with LangChain 0.2+ and Pinecone SDK v3.
+    Compatible with LangChain 1.x and Pinecone SDK v3+.
     """
+    # Initialize Pinecone
+    pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_ENV or "us-east-1")
 
-    # Initialize Pinecone client (new SDK)
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-
-    # Check if index already exists
-    existing_indexes = [idx.name for idx in pc.list_indexes()]
-
-    if PINECONE_INDEX_NAME not in existing_indexes:
-        pc.create_index(
+    # Check if index exists, create if not
+    if PINECONE_INDEX_NAME not in pinecone.list_indexes():
+        pinecone.create_index(
             name=PINECONE_INDEX_NAME,
             dimension=1024,  # Cohere embed-english-v3.0 dimension
-            metric="cosine",
-            spec=ServerlessSpec(
-                cloud="aws",
-                region=PINECONE_ENV or "us-east-1"
-            )
+            metric="cosine"
         )
 
-    # Initialize Cohere embeddings (API-based, lightweight)
+    # Initialize Cohere embeddings
     embeddings = CohereEmbeddings(
         cohere_api_key=COHERE_API_KEY,
         model="embed-english-v3.0"
     )
 
     # Connect to index
-    index = pc.Index(PINECONE_INDEX_NAME)
+    index = pinecone.Index(PINECONE_INDEX_NAME)
 
     # Create LangChain vector store
     vectorstore = PineconeVectorStore(
