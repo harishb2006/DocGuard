@@ -49,7 +49,7 @@ const DashboardPage = () => {
 
     const navItems = [
         { label: 'Chat & Q&A', path: `/app/${orgId}/chat`, icon: MessageSquare, allowed: true },
-        { label: 'Documents', path: `/app/${orgId}/documents`, icon: FileText, allowed: true },
+        { label: 'Documents', path: `/app/${orgId}/documents`, icon: FileText, allowed: isAdmin },
         { label: 'Upload', path: `/app/${orgId}/upload`, icon: Upload, allowed: isAdmin },
     ];
 
