@@ -10,14 +10,14 @@ const LoginPage = () => {
 
     React.useEffect(() => {
         if (user) {
-            navigate('/documents');
+            navigate('/orgs');
         }
     }, [user, navigate]);
 
     const handleLogin = async () => {
         try {
             await loginWithGoogle();
-            navigate('/documents');
+            navigate('/orgs');
         } catch (err) {
             setError('Failed to log in. Please try again.');
             console.error(err);

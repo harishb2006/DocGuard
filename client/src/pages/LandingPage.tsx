@@ -2,17 +2,20 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BookText, Upload, Search, ShieldCheck,
-  Sparkles, Plus, LayoutGrid,
+  Plus, LayoutGrid,
   History, Mic, Send, FileSearch
 } from 'lucide-react';
-
 
 import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const { user, loginWithGoogle, logout, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
+
+  const handleEnterApp = () => {
+    navigate('/orgs');
+  };
 
   return (
     <div className="min-h-screen bg-[#DDE2FF] flex items-center justify-center p-4 md:p-8 font-sans">
@@ -42,16 +45,9 @@ const LandingPage = () => {
               <span>RuleBook Enterprise</span>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/documents')}
-                className="bg-white text-slate-700 px-5 py-2.5 rounded-full font-semibold hover:bg-slate-50 transition-all shadow-md border border-slate-200"
-              >
-                Documents
-              </button>
-
               {!user ? (
                 <button
-                  onClick={loginWithGoogle}
+                  onClick={() => navigate('/login')}
                   disabled={authLoading}
                   className="bg-indigo-600 text-white px-5 py-2.5 rounded-full font-semibold hover:bg-indigo-700 transition-all shadow-md"
                 >
@@ -60,10 +56,10 @@ const LandingPage = () => {
               ) : (
                 <>
                   <button
-                    onClick={() => navigate('/chat')}
+                    onClick={handleEnterApp}
                     className="bg-indigo-600 text-white px-5 py-2.5 rounded-full font-semibold hover:bg-indigo-700 transition-all shadow-md"
                   >
-                    Ask Questions
+                    Launch App
                   </button>
                   <button
                     onClick={logout}
@@ -73,14 +69,6 @@ const LandingPage = () => {
                   </button>
                 </>
               )}
-
-              <button
-                onClick={() => navigate('/analytics')}
-                className="bg-black text-white px-6 py-2.5 rounded-full font-semibold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg"
-              >
-                <Sparkles size={16} />
-                Admin Console
-              </button>
             </div>
           </nav>
 
@@ -98,21 +86,21 @@ const LandingPage = () => {
                   title="Upload Documents"
                   desc="Upload corporate PDFs. We chunk and embed data for 100% accuracy."
                   label="Data Pipeline"
-                  onClick={() => navigate('/upload')}
+                  onClick={handleEnterApp}
                 />
                 <FeatureCard
                   icon={<div className="bg-blue-100 p-3 rounded-xl text-blue-600"><FileSearch /></div>}
                   title="Ask Questions"
                   desc="AI answers strictly using your uploaded data—no hallucinations."
                   label="Grounded AI"
-                  onClick={() => navigate('/chat')}
+                  onClick={handleEnterApp}
                 />
                 <FeatureCard
                   icon={<div className="bg-slate-100 p-3 rounded-xl text-slate-600"><ShieldCheck /></div>}
                   title="Manage Documents"
                   desc="View all uploaded documents with page numbers and direct quotes for audit."
                   label="Document Control"
-                  onClick={() => navigate('/documents')}
+                  onClick={handleEnterApp}
                 />
               </div>
             </div>
@@ -138,14 +126,14 @@ const LandingPage = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && searchQuery.trim() && navigate('/chat')}
+                onKeyPress={(e) => e.key === 'Enter' && handleEnterApp()}
                 placeholder="Search company policies, manuals, or handbooks..."
                 className="flex-1 bg-transparent outline-none py-4 text-slate-700 font-medium"
               />
               <div className="flex items-center gap-3">
                 <Mic className="text-slate-400 cursor-pointer" />
                 <button
-                  onClick={() => searchQuery.trim() && navigate('/chat')}
+                  onClick={handleEnterApp}
                   className="bg-indigo-600 p-3 rounded-2xl text-white hover:scale-105 transition-transform"
                 >
                   <Send size={18} />
@@ -153,9 +141,9 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="flex justify-center gap-3 mt-4">
-              <QuickAction label="Health Benefits" onClick={() => navigate('/chat')} />
-              <QuickAction label="IT Security" onClick={() => navigate('/chat')} />
-              <QuickAction label="Remote Work" onClick={() => navigate('/chat')} />
+              <QuickAction label="Health Benefits" onClick={handleEnterApp} />
+              <QuickAction label="IT Security" onClick={handleEnterApp} />
+              <QuickAction label="Remote Work" onClick={handleEnterApp} />
             </div>
           </div>
         </main>

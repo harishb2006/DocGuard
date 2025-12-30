@@ -64,3 +64,9 @@ async def get_analytics_collection():
     """Get analytics collection"""
     db = await get_database()
     return db["analytics"]
+
+
+async def get_organizations_collection():
+    """Get organizations collection"""
+    db = await get_database()
+    return db["organizations"]

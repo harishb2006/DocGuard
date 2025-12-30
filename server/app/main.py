@@ -10,7 +10,7 @@ load_dotenv()
 from .ingest.loader import load_pdf
 from .ingest.splitter import split_documents
 from .ingest.vectorstore import get_vectorstore
-from .routes import admin, employee, auth
+from .routes import auth, organizations, documents
 from .db.mongodb import close_mongodb_connection
 
 app = FastAPI(
@@ -53,8 +53,8 @@ async def shutdown_event():
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(admin.router, prefix="/admin", tags=["Admin"])
-app.include_router(employee.router, prefix="/employee", tags=["Employee"])
+app.include_router(organizations.router, prefix="/organizations", tags=["Organizations"])
+app.include_router(documents.router, prefix="/documents", tags=["Documents"])
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -65,11 +65,10 @@ def root():
         "message": "RuleBook AI Backend - v2.0",
         "status": "active",
         "features": [
-            "Firebase Google Authentication",
-            "MongoDB User Management",
-            "Admin Dashboard with Analytics",
+            "Organization-based Architecture",
+            "Role-Based Access Control (Admin/Employee)",
             "RAG-based Q&A with Citations",
-            "Query Analytics & Word Cloud"
+            "Firebase Authentication"
         ]
     }
 
@@ -89,32 +88,3 @@ def health_check():
         "firebase": "initialized"
     }
     return status
-
-@app.post("/admin/upload-pdf")
-async def upload_pdf(file: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-
-    # Save file
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    # Load PDF
-    documents = load_pdf(file_path)
-
-    # Split into chunks
-    chunks = split_documents(documents)
-
-    # Add metadata
-    for chunk in chunks:
-        chunk.metadata["document_name"] = file.filename
-
-    # Store in Pinecone
-    vectorstore = get_vectorstore()
-    vectorstore.add_documents(chunks)
-
-    return {
-        "status": "success",
-        "filename": file.filename,
-        "pages": len(documents),
-        "chunks_created": len(chunks)
-    }

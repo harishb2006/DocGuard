@@ -1,11 +1,13 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import UploadPage from './pages/UploadPage';
 import ChatPage from './pages/ChatPage';
 import DocumentsPage from './pages/DocumentsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import LoginPage from './pages/LoginPage';
+import OrganizationSelectPage from './pages/OrganizationSelectPage';
+import DashboardPage from './pages/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
@@ -17,41 +19,38 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Employee Routes (Protected) */}
           <Route
-            path="/chat"
+            path="/orgs"
             element={
               <ProtectedRoute>
-                <ChatPage />
+                <OrganizationSelectPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Admin Routes (Protected + Admin Role) */}
+          {/* Unified Dashboard Routes */}
           <Route
-            path="/upload"
+            path="/app/:orgId"
             element={
-              <ProtectedRoute requireAdmin={true}>
-                <UploadPage />
+              <ProtectedRoute>
+                <DashboardPage />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/documents"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <DocumentsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <AnalyticsPage />
-              </ProtectedRoute>
-            }
-          />
+          >
+            {/* Redirect root /app/:orgId to Chat */}
+            <Route index element={<Navigate to="chat" replace />} />
+
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="documents" element={<DocumentsPage />} />
+            <Route path="upload" element={<UploadPage />} />
+          </Route>
+
+          {/* Legacy or Direct routes redirect to orgs */}
+          <Route path="/chat" element={<Navigate to="/orgs" replace />} />
+          <Route path="/upload" element={<Navigate to="/orgs" replace />} />
+          <Route path="/documents" element={<Navigate to="/orgs" replace />} />
+          <Route path="/analytics" element={<Navigate to="/orgs" replace />} />
+
         </Routes>
       </AuthProvider>
     </Router>
