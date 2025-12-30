@@ -12,7 +12,7 @@ export interface Organization {
 export const orgApi = {
   create: async (name: string): Promise<Organization> => {
     const token = await auth.currentUser?.getIdToken();
-    const response = await fetch(`${API_URL}/organizations/`, {
+    const response = await fetch(`${API_URL}/organizations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ export const orgApi = {
       },
       body: JSON.stringify({ name }),
     });
-    
+
     if (!response.ok) throw new Error('Failed to create organization');
     return response.json();
   },
@@ -37,8 +37,8 @@ export const orgApi = {
     });
 
     if (!response.ok) {
-       const err = await response.json();
-       throw new Error(err.detail || 'Failed to join organization');
+      const err = await response.json();
+      throw new Error(err.detail || 'Failed to join organization');
     }
     return response.json();
   },
@@ -48,7 +48,7 @@ export const orgApi = {
     // Return empty list if no user (should rely on auth context but for safety)
     if (!auth.currentUser) return [];
 
-    const response = await fetch(`${API_URL}/organizations/`, {
+    const response = await fetch(`${API_URL}/organizations`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

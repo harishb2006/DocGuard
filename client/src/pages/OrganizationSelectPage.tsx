@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { orgApi, Organization } from '../services/api';
+import { orgApi, type Organization } from '../services/api';
 import { Plus, Users, ArrowRight, Building, LogOut } from 'lucide-react';
 
 const OrganizationSelectPage = () => {
@@ -30,7 +30,7 @@ const OrganizationSelectPage = () => {
     };
 
     const handleOrgSelect = (orgId: string) => {
-        navigate(`/app/${orgId}/dashboard`);
+        navigate(`/app/${orgId}`);
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;

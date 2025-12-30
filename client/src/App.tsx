@@ -4,7 +4,7 @@ import LandingPage from './pages/LandingPage';
 import UploadPage from './pages/UploadPage';
 import ChatPage from './pages/ChatPage';
 import DocumentsPage from './pages/DocumentsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
+
 import LoginPage from './pages/LoginPage';
 import OrganizationSelectPage from './pages/OrganizationSelectPage';
 import DashboardPage from './pages/DashboardPage';

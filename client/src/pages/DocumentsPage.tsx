@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  FileText, Trash2, Download, Loader2,
+  FileText, Trash2, Loader2,
   AlertCircle, Search, UploadCloud,
-  Grid, List, File, LayoutDashboard, CheckCircle
+  Grid, List, File, LayoutDashboard
 } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';

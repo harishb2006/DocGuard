@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { orgApi } from '../services/api';
 import {
     LayoutDashboard, MessageSquare, Upload, FileText,
-    LogOut, ChevronRight, Menu, X, Shield, Settings
+    LogOut, ChevronRight, Menu, Shield
 } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -24,23 +24,26 @@ const DashboardPage = () => {
 
     const loadOrgDetails = async () => {
         try {
+            console.log("Fetching orgs for ID:", orgId);
             const orgs = await orgApi.list();
+            console.log("Fetched orgs:", orgs);
             const currentOrg = orgs.find(o => o.id === orgId);
             if (currentOrg) {
                 setOrg(currentOrg);
             } else {
-                navigate('/orgs'); // Invalid org or not member
+                console.error("Org not found in list. Available:", orgs.map(o => o.id));
+                // navigate('/orgs'); // DISABLED FOR DEBUGGING
             }
         } catch (error) {
             console.error("Failed to load org", error);
-            navigate('/orgs');
+            // navigate('/orgs'); // DISABLED FOR DEBUGGING
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading Organization...</div>;
-    if (!org) return null;
+    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading Organization {orgId}...</div>;
+    if (!org) return <div className="p-10 text-red-500"><h1>Error: Organization Not Found</h1><p>Expected ID: {orgId}</p><p>Check Console for details.</p><button onClick={() => navigate('/orgs')}>Back to Orgs</button></div>;
 
     const isAdmin = org.role === 'ADMIN';
 

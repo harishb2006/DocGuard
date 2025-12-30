@@ -13,7 +13,7 @@ from ..models.user import UserOrgRole
 
 router = APIRouter()
 
-@router.post("/", response_model=OrganizationResponse)
+@router.post("", response_model=OrganizationResponse)
 async def create_organization(
     org_data: OrganizationCreate,
     token_data: dict = Depends(verify_firebase_token)
@@ -124,7 +124,7 @@ async def join_organization(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=List[OrganizationResponse])
+@router.get("", response_model=List[OrganizationResponse])
 async def list_user_organizations(
     token_data: dict = Depends(verify_firebase_token)
 ):
