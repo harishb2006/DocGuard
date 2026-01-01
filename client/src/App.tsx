@@ -42,23 +42,9 @@ function App() {
 
             <Route path="chat" element={<ChatPage />} />
 
-            <Route
-              path="documents"
-              element={
-                <ProtectedRoute requireAdmin={true}>
-                  <DocumentsPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="documents" element={<DocumentsPage />} />
 
-            <Route
-              path="upload"
-              element={
-                <ProtectedRoute requireAdmin={true}>
-                  <UploadPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="upload" element={<UploadPage />} />
           </Route>
 
           {/* Legacy or Direct routes redirect to orgs */}

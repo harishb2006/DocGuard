@@ -3,13 +3,18 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env/
+.env
 venv/
 ENV/
 .venv/
+=6.0.0
 
-# VSCode
+# Node
+node_modules/
+
+# IDE
 .vscode/
+.idea/
 
 # OS
 .DS_Store
@@ -17,14 +22,33 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
 
 # Temporary files
 tmp/
 *.tmp
 
-# Qdrant local (optional, if using local storage)
-qdrant_storage/
+# Environment variables
+server/.env
+server/.env.local
+client/.env
+client/.env.local
 
-dist/
-# Firebase credentials (security)
+# Firebase credentials (SECURITY - DO NOT COMMIT)
+server/app/*.json
+!server/app/package.json
 server/app/docg-9a14e-firebase-adminsdk-fbsvc-891e32e2b7.json
+
+# Uploads
+server/uploads/
+!server/uploads/.gitkeep
+
+# Vector store
+qdrant_storage/
+chroma_db/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+client/dist/

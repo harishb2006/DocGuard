@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+=6.0.0
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Firebase credentials (SECURITY - DO NOT COMMIT)
+*.json
+!package.json
+!tsconfig*.json
+app/docg-9a14e-firebase-adminsdk-fbsvc-891e32e2b7.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads directory (user files)
+uploads/
+!uploads/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Vector store data
+qdrant_storage/
+chroma_db/
+faiss_index/
