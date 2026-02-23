@@ -1,15 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
-import shutil
+from langchain_ollama import OllamaLLM
+import aiofiles
 import os
+import uuid
 from typing import List, Optional
 from datetime import datetime
-from cerebras.cloud.sdk import Cerebras
-import sys
-
-# Import config (ensure path is correct relative to execution)
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config import CEREBRAS_API_KEY
 
 from ..ingest.loader import load_pdf
 from ..ingest.splitter import split_documents
@@ -17,6 +14,7 @@ from ..ingest.vectorstore import get_vectorstore
 from ..auth.firebase_auth import verify_firebase_token
 from ..db.mongodb import get_documents_collection, get_users_collection, get_queries_collection
 from ..models.organization import RoleEnum
+from config import OLLAMA_BASE_URL, OLLAMA_MODEL
 
 router = APIRouter()
 
@@ -26,10 +24,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # --- Dependencies ---
 
 async def verify_org_membership(org_id: str, token_data: dict = Depends(verify_firebase_token)):
-    """
-    Verify the user is a member of the organization.
-    Returns: (user_doc, role_in_org)
-    """
     users_collection = await get_users_collection()
     user = await users_collection.find_one({"uid": token_data["uid"]})
     
@@ -48,9 +42,6 @@ async def verify_org_membership(org_id: str, token_data: dict = Depends(verify_f
     return user, role
 
 async def verify_org_admin(org_id: str, token_data: dict = Depends(verify_firebase_token)):
-    """
-    Verify the user is an ADMIN of the organization.
-    """
     user, role = await verify_org_membership(org_id, token_data)
     if role != RoleEnum.ADMIN:
         raise HTTPException(status_code=403, detail="Organization Admin privileges required")
@@ -85,56 +76,59 @@ async def upload_pdf(
     file: UploadFile = File(...),
     admin_user: dict = Depends(verify_org_admin)
 ):
-    """
-    Upload PDF to a specific organization.
-    Admin only.
-    """
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
     
     try:
-        # Create org-specific upload dir to avoid name collisions across orgs (optional but good practice)
         org_upload_dir = os.path.join(UPLOAD_DIR, org_id)
         os.makedirs(org_upload_dir, exist_ok=True)
         
-        file_path = os.path.join(org_upload_dir, file.filename)
+        # Security Fix: Prevent Path Traversal
+        safe_filename = os.path.basename(file.filename)
+        file_path = os.path.join(org_upload_dir, safe_filename)
         
-        # Save file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Unique ID to track the document in Pinecone for later deletion
+        document_id = str(uuid.uuid4())
         
-        # Load PDF
-        documents = load_pdf(file_path)
+        # Async file saving: Won't freeze the server
+        async with aiofiles.open(file_path, "wb") as out_file:
+            content = await file.read()
+            await out_file.write(content)
         
-        # Split into chunks
-        chunks = split_documents(documents)
+        # Offload 100-page processing to background threadpool
+        documents = await run_in_threadpool(load_pdf, file_path)
+        chunks = await run_in_threadpool(split_documents, documents)
         
-        # Add metadata (Crucial: Add org_id)
+        # Add metadata including our tracking document_id
         for chunk in chunks:
-            chunk.metadata["document_name"] = file.filename
-            chunk.metadata["org_id"] = org_id
+            chunk.metadata.update({
+                "document_name": safe_filename,
+                "document_id": document_id,
+                "org_id": org_id
+            })
         
-        # Store in Pinecone
+        # Offload network call to Pinecone to threadpool
         vectorstore = get_vectorstore()
-        vectorstore.add_documents(chunks)
+        await run_in_threadpool(vectorstore.add_documents, chunks)
         
         # Save document metadata to MongoDB
         documents_collection = await get_documents_collection()
         await documents_collection.insert_one({
-            "org_id": org_id, # Link to org
-            "filename": file.filename,
+            "document_id": document_id, 
+            "org_id": org_id,
+            "filename": safe_filename,
             "file_path": file_path,
             "pages": len(documents),
             "chunks_created": len(chunks),
             "uploaded_by": admin_user["uid"],
-            "uploaded_by_email": admin_user["email"],
+            "uploaded_by_email": admin_user.get("email", "unknown"),
             "uploaded_at": datetime.utcnow(),
             "status": "active"
         })
         
         return {
             "status": "success",
-            "filename": file.filename,
+            "filename": safe_filename,
             "pages": len(documents),
             "chunks_created": len(chunks),
             "message": "Document successfully ingested"
@@ -147,22 +141,13 @@ async def upload_pdf(
 
 
 @router.get("/{org_id}/list", response_model=List[DocumentInfo])
-async def list_documents(
-    org_id: str,
-    membership_info: tuple = Depends(verify_org_membership)
-):
-    """
-    List documents for the organization.
-    Available to all members (Admin + Employee).
-    """
+async def list_documents(org_id: str, membership_info: tuple = Depends(verify_org_membership)):
     try:
         documents_collection = await get_documents_collection()
-        
         docs = await documents_collection.find({"org_id": org_id}).to_list(length=100)
         
         results = []
         for doc in docs:
-            # Check if file exists to get size, otherwise default 0
             size = 0
             if "file_path" in doc and os.path.exists(doc["file_path"]):
                 size = os.stat(doc["file_path"]).st_size
@@ -173,9 +158,7 @@ async def list_documents(
                 uploaded_at=doc["uploaded_at"],
                 uploaded_by=doc.get("uploaded_by_email", "Unknown")
             ))
-            
         return results
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
 
@@ -186,36 +169,28 @@ async def ask_question(
     request: QuestionRequest,
     membership_info: tuple = Depends(verify_org_membership)
 ):
-    """
-    Ask a question within the organization context.
-    """
     user, role = membership_info
     
     try:
         vectorstore = get_vectorstore()
         
-        # Build filter: STRICTLY filter by org_id
         filter_dict = {"org_id": org_id}
-        
         if request.document_filter:
             filter_dict["document_name"] = {"$in": request.document_filter}
             
-        results = vectorstore.similarity_search_with_score(
+        # Threadpool for Pinecone network call
+        results = await run_in_threadpool(
+            vectorstore.similarity_search_with_score,
             request.question,
             k=3,
             filter=filter_dict
         )
 
         if not results:
-            return AnswerResponse(
-                answer="Not mentioned in the uploaded documents.",
-                sources=[]
-            )
+            return AnswerResponse(answer="Not mentioned in the uploaded documents.", sources=[])
 
-        # Prepare context
         context_parts = []
         sources = []
-
         for idx, (doc, score) in enumerate(results, 1):
             context_parts.append(f"[Source {idx}]\n{doc.page_content}\n")
             sources.append(SourceCitation(
@@ -225,10 +200,7 @@ async def ask_question(
             ))
 
         context = "\n".join(context_parts)
-
-        # Grounded Prompt
         prompt = f"""You are a helpful assistant for {role}s at their organization. Answer the question ONLY using the provided context below.
-
 CRITICAL RULES:
 - If the answer is not in the context, say "Not mentioned in the uploaded documents."
 - Always cite which source ([Source 1], [Source 2]) you used.
@@ -238,20 +210,13 @@ CONTEXT:
 {context}
 
 QUESTION: {request.question}
-
 ANSWER:"""
 
-        # Call Cerebras
-        client = Cerebras()
-        chat_completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b",
-            temperature=0.0
-        )
-
-        answer = chat_completion.choices[0].message.content
+        llm = OllamaLLM(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.0)
         
-        # Log query
+        # Threadpool for local LLM inference to prevent blocking
+        answer = await run_in_threadpool(llm.invoke, prompt)
+        
         queries_collection = await get_queries_collection()
         await queries_collection.insert_one({
             "org_id": org_id,
@@ -262,49 +227,51 @@ ANSWER:"""
             "timestamp": datetime.utcnow()
         })
 
-        return AnswerResponse(
-            answer=answer,
-            sources=sources
-        )
+        return AnswerResponse(answer=answer, sources=sources)
 
     except Exception as e:
         import traceback
         print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+
+
 @router.delete("/{org_id}/{filename}")
 async def delete_document(
     org_id: str,
     filename: str,
     admin_user: dict = Depends(verify_org_admin)
 ):
-    """
-    Delete a document from the organization.
-    Admin only.
-    """
     try:
         documents_collection = await get_documents_collection()
         
-        # Verify document belongs to org
+        # Security: Sanitize filename before database/file operations
+        safe_filename = os.path.basename(filename)
+        
         doc = await documents_collection.find_one({
             "org_id": org_id,
-            "filename": filename
+            "filename": safe_filename
         })
         
         if not doc:
             raise HTTPException(status_code=404, detail="Document not found")
             
-        # 1. Delete from Pinecone
-        # Note: Deleting by metadata might require specific index configuration or SDK calls.
-        # We will attempt best effort or skip if complex for now to avoid SDK crashes.
-        # In a production app, we would store vector IDs or use delete_by_metadata.
+        # 1. Delete from Pinecone cleanly using the tracked ID
+        document_id = doc.get("document_id")
+        if document_id:
+            vectorstore = get_vectorstore()
+            await run_in_threadpool(
+                vectorstore.delete,
+                filter={"document_id": document_id}
+            )
         
         # 2. Delete from MongoDB
         await documents_collection.delete_one({"_id": doc["_id"]})
         
-        # 3. Delete file from Disk
+        # 3. Delete file from Disk safely
         if "file_path" in doc and os.path.exists(doc["file_path"]):
             os.remove(doc["file_path"])
             
-        return {"status": "success", "message": f"Document {filename} deleted"}
+        return {"status": "success", "message": f"Document {safe_filename} deleted"}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")

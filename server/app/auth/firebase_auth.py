@@ -1,18 +1,31 @@
-import os
+"""
+Firebase Authentication Module
+
+Handles Firebase Admin SDK initialization and token verification.
+Provides authentication middleware for FastAPI routes.
+
+SECURITY: Credentials path is loaded from environment via config module.
+"""
+
 import firebase_admin
 from firebase_admin import credentials, auth
 from fastapi import HTTPException, Header
 from typing import Optional
 
-# Initialize Firebase Admin SDK
-cred_path = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    "docg-9a14e-firebase-adminsdk-fbsvc-891e32e2b7.json"
-)
+# Import credentials path from config (environment-driven, not hardcoded)
+from config import FIREBASE_CREDENTIALS_PATH
 
+
+# Initialize Firebase Admin SDK (singleton pattern)
 if not firebase_admin._apps:
-    cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
+    try:
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+        print(f"✓ Firebase Admin SDK initialized from: {FIREBASE_CREDENTIALS_PATH}")
+    except Exception as e:
+        print(f"⚠️  Firebase initialization failed: {e}")
+        print(f"   Credentials path: {FIREBASE_CREDENTIALS_PATH}")
+        raise
 
 
 async def verify_firebase_token(authorization: str = Header(None)) -> dict:
