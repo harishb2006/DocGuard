@@ -47,26 +47,7 @@ async def verify_org_admin(org_id: str, token_data: dict = Depends(verify_fireba
         raise HTTPException(status_code=403, detail="Organization Admin privileges required")
     return user
 
-# --- Models ---
-
-class DocumentInfo(BaseModel):
-    filename: str
-    size: int
-    uploaded_at: datetime
-    uploaded_by: str
-
-class QuestionRequest(BaseModel):
-    question: str
-    document_filter: list[str] = None
-
-class SourceCitation(BaseModel):
-    page: int
-    content: str
-    document_name: str
-
-class AnswerResponse(BaseModel):
-    answer: str
-    sources: list[SourceCitation]
+from ..models.document import DocumentInfo, QuestionRequest, SourceCitation, AnswerResponse
 
 # --- Routes ---
 
