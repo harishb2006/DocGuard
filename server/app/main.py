@@ -9,7 +9,6 @@ load_dotenv()
 
 from .routes import auth, organizations, documents, admin
 from .db.mongodb import close_mongodb_connection
-from config import UPLOAD_DIR
 
 
 # Modern Lifespan Context Manager (Replaces deprecated @app.on_event)
@@ -24,9 +23,6 @@ async def lifespan(app: FastAPI):
     print("✓ Firebase Admin SDK initialized")
     print("✓ MongoDB connection ready")
     print("✓ Pinecone vector store ready")
-    
-    # Create upload directory if it doesn't exist
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
     
     yield  # Server is running
     

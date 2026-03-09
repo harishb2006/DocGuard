@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from langchain_groq import ChatGroq
-import aiofiles
+import tempfile
 import os
 import uuid
 from typing import List, Optional
@@ -17,9 +17,6 @@ from ..models.organization import RoleEnum
 from config import GROQ_API_KEY, GROQ_MODEL
 
 router = APIRouter()
-
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # --- Dependencies ---
 
@@ -61,24 +58,24 @@ async def upload_pdf(
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
     
     try:
-        org_upload_dir = os.path.join(UPLOAD_DIR, org_id)
-        os.makedirs(org_upload_dir, exist_ok=True)
-        
         # Security Fix: Prevent Path Traversal
         safe_filename = os.path.basename(file.filename)
-        file_path = os.path.join(org_upload_dir, safe_filename)
         
         # Unique ID to track the document in Pinecone for later deletion
         document_id = str(uuid.uuid4())
         
-        # Async file saving: Won't freeze the server
-        async with aiofiles.open(file_path, "wb") as out_file:
-            content = await file.read()
-            await out_file.write(content)
+        # Read file content and get size
+        content = await file.read()
+        file_size = len(content)
         
-        # Offload 100-page processing to background threadpool
-        documents = await run_in_threadpool(load_pdf, file_path)
-        chunks = await run_in_threadpool(split_documents, documents)
+        # Use temp file for processing (auto-deleted after)
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as tmp_file:
+            tmp_file.write(content)
+            tmp_file.flush()
+            
+            # Process PDF from temp file
+            documents = await run_in_threadpool(load_pdf, tmp_file.name)
+            chunks = await run_in_threadpool(split_documents, documents)
         
         # Add metadata including our tracking document_id
         for chunk in chunks:
@@ -92,13 +89,13 @@ async def upload_pdf(
         vectorstore = get_vectorstore()
         await run_in_threadpool(vectorstore.add_documents, chunks)
         
-        # Save document metadata to MongoDB
+        # Save document metadata to MongoDB (no file_path needed - embeddings are in Pinecone)
         documents_collection = await get_documents_collection()
         await documents_collection.insert_one({
             "document_id": document_id, 
             "org_id": org_id,
             "filename": safe_filename,
-            "file_path": file_path,
+            "file_size": file_size,  # Store size in MongoDB
             "pages": len(documents),
             "chunks_created": len(chunks),
             "uploaded_by": admin_user["uid"],
@@ -129,13 +126,9 @@ async def list_documents(org_id: str, membership_info: tuple = Depends(verify_or
         
         results = []
         for doc in docs:
-            size = 0
-            if "file_path" in doc and os.path.exists(doc["file_path"]):
-                size = os.stat(doc["file_path"]).st_size
-                
             results.append(DocumentInfo(
                 filename=doc["filename"],
-                size=size,
+                size=doc.get("file_size", 0),  # Get from MongoDB, not filesystem
                 uploaded_at=doc["uploaded_at"],
                 uploaded_by=doc.get("uploaded_by_email", "Unknown")
             ))
@@ -226,7 +219,7 @@ async def delete_document(
     try:
         documents_collection = await get_documents_collection()
         
-        # Security: Sanitize filename before database/file operations
+        # Security: Sanitize filename before database operations
         safe_filename = os.path.basename(filename)
         
         doc = await documents_collection.find_one({
@@ -249,11 +242,9 @@ async def delete_document(
         # 2. Delete from MongoDB
         await documents_collection.delete_one({"_id": doc["_id"]})
         
-        # 3. Delete file from Disk safely
-        if "file_path" in doc and os.path.exists(doc["file_path"]):
-            os.remove(doc["file_path"])
+        # No local file to delete - embeddings were in Pinecone, metadata in MongoDB
             
         return {"status": "success", "message": f"Document {safe_filename} deleted"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}"}
