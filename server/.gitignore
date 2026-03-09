@@ -18,10 +18,8 @@ ENV/
 .env.*.local
 
 # Firebase credentials (SECURITY - DO NOT COMMIT)
-*.json
-!package.json
-!tsconfig*.json
-app/docg-9a14e-firebase-adminsdk-fbsvc-891e32e2b7.json
+*firebase-adminsdk*.json
+app/docg-*.json
 
 # IDE
 .vscode/

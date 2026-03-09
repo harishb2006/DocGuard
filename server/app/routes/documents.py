@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
-from langchain_ollama import OllamaLLM
+from langchain_groq import ChatGroq
 import aiofiles
 import os
 import uuid
@@ -14,7 +14,7 @@ from ..ingest.vectorstore import get_vectorstore
 from ..auth.firebase_auth import verify_firebase_token
 from ..db.mongodb import get_documents_collection, get_users_collection, get_queries_collection
 from ..models.organization import RoleEnum
-from config import OLLAMA_BASE_URL, OLLAMA_MODEL
+from config import GROQ_API_KEY, GROQ_MODEL
 
 router = APIRouter()
 
@@ -193,10 +193,11 @@ CONTEXT:
 QUESTION: {request.question}
 ANSWER:"""
 
-        llm = OllamaLLM(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.0)
+        llm = ChatGroq(model=GROQ_MODEL, api_key=GROQ_API_KEY, temperature=0.0)
         
-        # Threadpool for local LLM inference to prevent blocking
-        answer = await run_in_threadpool(llm.invoke, prompt)
+        # Threadpool for Groq API call to prevent blocking
+        response = await run_in_threadpool(llm.invoke, prompt)
+        answer = response.content
         
         queries_collection = await get_queries_collection()
         await queries_collection.insert_one({

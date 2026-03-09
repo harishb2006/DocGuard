@@ -11,20 +11,27 @@ import firebase_admin
 from firebase_admin import credentials, auth
 from fastapi import HTTPException, Header
 from typing import Optional
+import json
 
-# Import credentials path from config (environment-driven, not hardcoded)
-from config import FIREBASE_CREDENTIALS_PATH
+# Import credentials from config (supports both JSON env var and file path)
+from config import FIREBASE_CREDENTIALS_JSON, FIREBASE_CREDENTIALS_PATH
 
 
 # Initialize Firebase Admin SDK (singleton pattern)
 if not firebase_admin._apps:
     try:
-        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        # Priority: Use JSON env var (for Render/production), fallback to file path (local dev)
+        if FIREBASE_CREDENTIALS_JSON:
+            cred_dict = json.loads(FIREBASE_CREDENTIALS_JSON)
+            cred = credentials.Certificate(cred_dict)
+            print("✓ Firebase Admin SDK initialized from FIREBASE_CREDENTIALS_JSON env var")
+        else:
+            cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+            print(f"✓ Firebase Admin SDK initialized from file: {FIREBASE_CREDENTIALS_PATH}")
+        
         firebase_admin.initialize_app(cred)
-        print(f"✓ Firebase Admin SDK initialized from: {FIREBASE_CREDENTIALS_PATH}")
     except Exception as e:
         print(f"⚠️  Firebase initialization failed: {e}")
-        print(f"   Credentials path: {FIREBASE_CREDENTIALS_PATH}")
         raise
 
 
