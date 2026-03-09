@@ -5,11 +5,12 @@ services:
     runtime: python
     region: oregon
     rootDir: server
+    pythonVersion: "3.12.0"  # Required for langchain-pinecone compatibility
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: "3.12.0"
       - key: MONGODB_URI
         sync: false  # Set this in Render dashboard
       - key: PINECONE_API_KEY
