@@ -38,8 +38,8 @@ if not FIREBASE_CREDENTIALS_JSON and not os.path.exists(FIREBASE_CREDENTIALS_PAT
     )
 
 # Document Processing
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 100
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
 
 # File limits
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB

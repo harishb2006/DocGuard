@@ -165,26 +165,52 @@ async def ask_question(
     user, role = membership_info
     
     try:
+        llm = ChatGroq(model=GROQ_MODEL, api_key=GROQ_API_KEY, temperature=0.0)
+        
+        # 1. Query Rewriting
+        rewrite_prompt = f"""You are an advanced search query optimization expert. Rewrite the following user query to be highly descriptive, extracting key technical terms, synonyms, and context to maximize vector retrieval against professional documents (like resumes and policies). 
+Return ONLY the standalone rewritten query, no conversational text.
+
+USER QUERY: {request.question}
+REWRITTEN QUERY:"""
+        
+        rewritten_response = await run_in_threadpool(llm.invoke, rewrite_prompt)
+        search_query = rewritten_response.content.strip()
+
         vectorstore = get_vectorstore()
         
         filter_dict = {"org_id": org_id}
         if request.document_filter:
             filter_dict["document_name"] = {"$in": request.document_filter}
             
-        # Threadpool for Pinecone network call
+        # 2. Broad Retrieval (simulating Hybrid breadth by fetching more)
         results = await run_in_threadpool(
             vectorstore.similarity_search_with_score,
-            request.question,
-            k=3,
+            search_query, # Use the Rewritten Query!
+            k=20,
             filter=filter_dict
         )
 
         if not results:
             return AnswerResponse(answer="Not mentioned in the uploaded documents.", sources=[])
 
+        # 3. Reranking using Cohere
+        from langchain_cohere import CohereRerank
+        from config import COHERE_API_KEY
+        
+        documents_list = [doc for doc, score in results]
+        reranker = CohereRerank(cohere_api_key=COHERE_API_KEY, model="rerank-english-v3.0", top_n=5)
+        
+        reranked_results = await run_in_threadpool(
+            reranker.compress_documents,
+            documents=documents_list,
+            query=request.question  # Rerank against original strict user intention
+        )
+
+        # 4. Final Generation
         context_parts = []
         sources = []
-        for idx, (doc, score) in enumerate(results, 1):
+        for idx, doc in enumerate(reranked_results, 1):
             context_parts.append(f"[Source {idx}]\n{doc.page_content}\n")
             sources.append(SourceCitation(
                 page=doc.metadata.get("page", 0),
@@ -193,11 +219,12 @@ async def ask_question(
             ))
 
         context = "\n".join(context_parts)
-        prompt = f"""You are a helpful assistant for {role}s at their organization. Answer the question ONLY using the provided context below.
+        prompt = f"""You are a helpful assistant for {role}s at their organization. Carefully read the provided context chunks and synthesize an intelligent response.
 CRITICAL RULES:
-- If the answer is not in the context, say "Not mentioned in the uploaded documents."
+- Rely strictly on the provided context, but piece together fragments from different [Source X] chunks logically.
+- If the answer is genuinely not in the context, say "Not mentioned in the uploaded documents."
 - Always cite which source ([Source 1], [Source 2]) you used.
-- Be concise.
+- Be precise and helpful.
 
 CONTEXT:
 {context}
@@ -205,8 +232,6 @@ CONTEXT:
 QUESTION: {request.question}
 ANSWER:"""
 
-        llm = ChatGroq(model=GROQ_MODEL, api_key=GROQ_API_KEY, temperature=0.0)
-        
         # Threadpool for Groq API call to prevent blocking
         response = await run_in_threadpool(llm.invoke, prompt)
         answer = response.content
