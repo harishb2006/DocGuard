@@ -5,6 +5,7 @@ from langchain_groq import ChatGroq
 import tempfile
 import os
 import uuid
+import hashlib
 from typing import List, Optional
 from datetime import datetime
 
@@ -58,15 +59,29 @@ async def upload_pdf(
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
     
     try:
+        content = await file.read()
+        file_size = len(content)
+        
+        # Content Hashing for Deduplication
+        file_hash = hashlib.sha256(content).hexdigest()
+        documents_collection = await get_documents_collection()
+        
+        existing_doc = await documents_collection.find_one({
+            "org_id": org_id, 
+            "content_hash": file_hash
+        })
+        
+        if existing_doc:
+            return {
+                "status": "already_exists",
+                "message": f"This document has already been uploaded as {existing_doc['filename']}"
+            }
+
         # Security Fix: Prevent Path Traversal
         safe_filename = os.path.basename(file.filename)
         
         # Unique ID to track the document in Pinecone for later deletion
         document_id = str(uuid.uuid4())
-        
-        # Read file content and get size
-        content = await file.read()
-        file_size = len(content)
         
         # Use temp file for processing (auto-deleted after)
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as tmp_file:
@@ -77,25 +92,29 @@ async def upload_pdf(
             documents = await run_in_threadpool(load_pdf, tmp_file.name)
             chunks = await run_in_threadpool(split_documents, documents)
         
-        # Add metadata including our tracking document_id
+        # Add metadata including our tracking document_id and content hash
         for chunk in chunks:
+            page_num = chunk.metadata.get("page", 1) 
+            
             chunk.metadata.update({
                 "document_name": safe_filename,
                 "document_id": document_id,
-                "org_id": org_id
+                "org_id": org_id,
+                "page_number": page_num,
+                "content_hash": file_hash
             })
         
         # Offload network call to Pinecone to threadpool
         vectorstore = get_vectorstore()
         await run_in_threadpool(vectorstore.add_documents, chunks)
         
-        # Save document metadata to MongoDB (no file_path needed - embeddings are in Pinecone)
-        documents_collection = await get_documents_collection()
+        # Save document metadata to MongoDB with hash
         await documents_collection.insert_one({
             "document_id": document_id, 
             "org_id": org_id,
+            "content_hash": file_hash,
             "filename": safe_filename,
-            "file_size": file_size,  # Store size in MongoDB
+            "file_size": file_size,
             "pages": len(documents),
             "chunks_created": len(chunks),
             "uploaded_by": admin_user["uid"],
