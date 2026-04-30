@@ -1,177 +1,176 @@
 import { useNavigate } from 'react-router-dom';
-import {
-  ShieldCheck, Upload, FileSearch, Globe,
-  ArrowRight, LayoutDashboard, Lock, Zap
+import { 
+  ShieldCheck, Upload, FileSearch, Lock, 
+  ArrowRight, Zap, CheckCircle2, MessageSquare, 
+  Search, Database, Shield 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-
-  const handleEnterApp = () => {
-    navigate('/orgs');
-  };
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#DDE2FF] font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden relative">
-
-      {/* Abstract Background Shapes */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-400/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-purple-400/20 rounded-full blur-[120px] animate-pulse delay-1000" />
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-indigo-100">
+      
+      {/* Glow Effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-200/40 blur-[120px] rounded-full" />
+        <div className="absolute top-[20%] -right-[10%] w-[30%] h-[30%] bg-purple-200/30 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 flex flex-col min-h-screen">
+      {/* Header */}
+      <nav className="relative z-50 max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
+            <ShieldCheck className="text-white" size={24} />
+          </div>
+          <span className="text-xl font-bold tracking-tight text-slate-800">RuleBook<span className="text-indigo-600">.ai</span></span>
+        </div>
+        <div className="flex items-center gap-6">
+          <button onClick={() => navigate('/login')} className="hidden md:block font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+            Login
+          </button>
+          <button 
+            onClick={() => navigate(user ? '/orgs' : '/login')}
+            className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center gap-2"
+          >
+            {user ? 'Go to Dashboard' : 'Get Started'} <ArrowRight size={18} />
+          </button>
+        </div>
+      </nav>
 
-        {/* Navigation */}
-        <nav className="flex justify-between items-center py-8">
-          <div className="flex items-center gap-2 text-slate-800 font-bold text-xl tracking-tight">
-            <div className="bg-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-600/20">
-              <ShieldCheck size={20} strokeWidth={3} />
-            </div>
-            <span>RuleBook Enterprise</span>
+      {/* Hero Section */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 pt-20 pb-32 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-sm font-bold mb-8">
+          <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+          v2.0: Now with Gemini 1.5 Pro Support
+        </div>
+        
+        <h1 className="text-5xl md:text-7xl font-black text-slate-900 leading-[1.05] mb-8 tracking-tight">
+          Your company’s knowledge, <br />
+          <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+            delivered in seconds.
+          </span>
+        </h1>
+
+        <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+          Stop wasting hours searching through outdated PDFs. RuleBook AI creates a private, hallucination-free expert that answers employee questions instantly using your actual policies.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button 
+            onClick={() => navigate('/login')}
+            className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-200 transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
+          >
+            Deploy RuleBook Free <Zap size={20} className="fill-white" />
+          </button>
+          <button className="w-full sm:w-auto px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold text-lg hover:bg-slate-50 transition-all">
+            Talk to Sales
+          </button>
+        </div>
+
+        {/* Social Proof / Trust */}
+        <div className="mt-20 pt-10 border-t border-slate-200/60">
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-8">Trusted by Modern Engineering Teams</p>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-50 grayscale">
+            <span className="text-2xl font-bold text-slate-800">ACME CORP</span>
+            <span className="text-2xl font-bold text-slate-800">GLOBEX</span>
+            <span className="text-2xl font-bold text-slate-800">SOYLENT</span>
+            <span className="text-2xl font-bold text-slate-800">INITECH</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Value Proposition Grid */}
+      <section className="bg-white py-24 relative z-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Engineered for Accuracy</h2>
+            <p className="text-slate-500">Unlike generic LLMs, we prioritize source-grounded truth above all else.</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            {!user ? (
-              <>
-                <button
-                  onClick={() => navigate('/login')}
-                  className="text-slate-600 font-semibold hover:text-indigo-600 transition-colors hidden md:block"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => navigate('/login')}
-                  disabled={authLoading}
-                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full font-semibold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2"
-                >
-                  Get Started <ArrowRight size={16} />
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleEnterApp}
-                className="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 active:scale-95 flex items-center gap-2"
-              >
-                <LayoutDashboard size={18} />
-                Launch Console
-              </button>
-            )}
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureItem 
+              icon={<Database className="text-blue-600" />}
+              title="Semantic Chunking"
+              description="We don't just read text. We understand context, ensuring your policy's nuance is never lost in translation."
+            />
+            <FeatureItem 
+              icon={<Shield className="text-green-600" />}
+              description="Zero-retention data privacy. Your company secrets stay yours—we never train models on your data."
+              title="Enterprise Grade Security"
+            />
+            <FeatureItem 
+              icon={<CheckCircle2 className="text-purple-600" />}
+              description="Every response includes a direct link to the source document and page number for 100% verifiability."
+              title="Verified Citations"
+            />
           </div>
-        </nav>
+        </div>
+      </section>
 
-        {/* Hero Section */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center mt-10 md:mt-20 mb-20">
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-white/50 backdrop-blur-md shadow-sm text-sm font-semibold text-indigo-700 mb-8 animate-fade-in-up">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </span>
-            New: Multi-Document RAG Engine v2.0
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.1] mb-8 max-w-5xl mx-auto drop-shadow-sm">
-            Make your company data <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-              Instantly Searchable.
-            </span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed mb-12">
-            Stop digging through folders. DocGuard ingests your PDFs, policies, and handbooks to create a private, hallucination-free AI expert for your organization.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <button
-              onClick={user ? handleEnterApp : () => navigate('/login')}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-600/30 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3"
-            >
-              Start Free Trial <Zap size={20} className="text-yellow-300 fill-yellow-300" />
-            </button>
-            <button
-              onClick={() => { }} // Placeholder for demo
-              className="px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl font-bold text-lg shadow-lg border border-slate-100 transition-all hover:-translate-y-1 active:scale-95"
-            >
-              View Live Demo
-            </button>
-          </div>
-
-          {/* Stats / Trust */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 border-t border-slate-200/50 pt-12 opacity-80">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-slate-800">99.9%</div>
-              <div className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Uptime</div>
+      {/* Product Preview Section */}
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        <div className="bg-slate-900 rounded-[3rem] p-8 md:p-16 overflow-hidden relative shadow-2xl">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                From PDF to <br/> Chat in under 60s.
+              </h2>
+              <ul className="space-y-4">
+                {[
+                  "Bulk upload 100+ page handbooks",
+                  "Auto-generated embeddings (Gemini 1.5)",
+                  "Vector-optimized search (Pinecone)",
+                  "Seamless React-based chat UI"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle2 size={18} className="text-indigo-400" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-slate-800">AES-256</div>
-              <div className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Encryption</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-slate-800">&lt;50ms</div>
-              <div className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Latency</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-slate-800">10k+</div>
-              <div className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Docs Processed</div>
+            <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-inner">
+               {/* Mock UI Representation */}
+               <div className="space-y-3">
+                  <div className="h-8 w-2/3 bg-slate-700 rounded-lg animate-pulse" />
+                  <div className="h-20 w-full bg-indigo-600/20 rounded-lg border border-indigo-500/30 p-4">
+                    <p className="text-xs text-indigo-300 font-mono">system@rulebook: ~$ semantic_search --query "remote work"</p>
+                    <p className="text-sm text-white mt-2">Found: Section 4.2 - "Hybrid Eligibility"</p>
+                  </div>
+                  <div className="h-8 w-1/2 bg-slate-700 rounded-lg animate-pulse" />
+               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
-          <FeatureCard
-            icon={<Upload size={28} />}
-            title="Smart Ingestion"
-            desc="Drag & drop massive PDF libraries. We auto-chunk, embed, and index everything in seconds."
-            color="bg-blue-500"
-          />
-          <FeatureCard
-            icon={<FileSearch size={28} />}
-            title="Semantic Search"
-            desc="Don't match keywords. Match meaning. Ask natural questions and get precise pages back."
-            color="bg-indigo-500"
-          />
-          <FeatureCard
-            icon={<Lock size={28} />}
-            title="Enterprise Security"
-            desc="Role-based access control (RBAC), end-to-end encryption, and strict data isolation."
-            color="bg-purple-500"
-          />
-        </div>
-
-        {/* Footer */}
-        <footer className="border-t border-slate-200/50 py-8 text-center text-slate-400 text-sm">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Globe size={16} />
-            <span>San Francisco, CA</span>
-          </div>
-          &copy; {new Date().getFullYear()} RuleBook AI Inc. All rights reserved.
-        </footer>
-
-      </div>
+      {/* CTA Footer */}
+      <footer className="py-20 text-center border-t border-slate-200">
+        <h2 className="text-3xl font-bold mb-6">Ready to fix your internal support?</h2>
+        <button 
+          onClick={() => navigate('/login')}
+          className="px-10 py-4 bg-indigo-600 text-white rounded-full font-bold shadow-lg hover:bg-indigo-700 transition-all"
+        >
+          Get Started for Free
+        </button>
+        <p className="mt-8 text-slate-400 text-sm">
+          © {new Date().getFullYear()} RuleBook AI. Built for the future of work.
+        </p>
+      </footer>
     </div>
   );
 };
 
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  color: string;
-}
-
-const FeatureCard = ({ icon, title, desc, color }: FeatureCardProps) => (
-  <div className="bg-white/60 backdrop-blur-xl border border-white/50 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] group cursor-default">
-    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg mb-6 ${color} group-hover:scale-110 transition-transform duration-300`}>
+const FeatureItem = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
+  <div className="p-8 rounded-3xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group">
+    <div className="mb-4 p-3 bg-white rounded-2xl w-fit shadow-sm group-hover:scale-110 transition-transform">
       {icon}
     </div>
-    <h3 className="text-xl font-bold text-slate-800 mb-3">{title}</h3>
-    <p className="text-slate-500 leading-relaxed">
-      {desc}
-    </p>
+    <h3 className="text-xl font-bold mb-2">{title}</h3>
+    <p className="text-slate-500 leading-relaxed">{description}</p>
   </div>
 );
 
